@@ -1,1 +1,158 @@
-# GameBackground.jsx
+import React, { useState, useEffect } from "react";
+import { motion, useAnimation } from "framer-motion";
+import { Card, CardContent } from "@/components/ui/card";
+import useSound from "use-sound";
+
+const GameBackground = () => {
+  const [portalColor, setPortalColor] = useState("blue-500");
+  const [divinePosition, setDivinePosition] = useState({ x: 50, y: 40 });
+  const [shadowPosition, setShadowPosition] = useState({ x: 15, y: 70 });
+
+  const divineControls = useAnimation();
+  const shadowControls = useAnimation();
+
+  // Load sounds
+  const [playLightSound] = useSound("/sounds/light.mp3", { volume: 0.5 });
+  const [playShadowSound] = useSound("/sounds/shadow.mp3", { volume: 0.5 });
+  const [playPortalSound] = useSound("/sounds/portal.mp3", { volume: 0.5 });
+  const [playAmbientLightSound] = useSound("/sounds/cosmic-light.wav", { loop: true, volume: 0.3 });
+
+  useEffect(() => {
+    playAmbientLightSound();
+    return () => playAmbientLightSound.stop();
+  }, [playAmbientLightSound]);
+
+  // Cycle portal color on click
+  const handlePortalClick = () => {
+    const colors = ["blue-500", "purple-600", "pink-500", "cyan-400"];
+    setPortalColor(colors[Math.floor(Math.random() * colors.length)]);
+    playPortalSound();
+  };
+
+  // Random divine being movement
+  useEffect(() => {
+    const moveDivine = () => {
+      setDivinePosition({
+        x: Math.random() * 80 + 10,
+        y: Math.random() * 70 + 10,
+      });
+      divineControls.start({
+        x: `${divinePosition.x}%`,
+        y: `${divinePosition.y}%`,
+        transition: { duration: 3 },
+      });
+      playLightSound();
+    };
+    const interval = setInterval(moveDivine, 3000);
+    return () => clearInterval(interval);
+  }, [divinePosition, divineControls, playLightSound]);
+
+  // Shadow being dodge logic
+  useEffect(() => {
+    const dodgeLight = () => {
+      if (Math.abs(divinePosition.x - shadowPosition.x) < 10 && Math.abs(divinePosition.y - shadowPosition.y) < 10) {
+        setShadowPosition({
+          x: Math.random() * 80 + 10,
+          y: Math.random() * 70 + 10,
+        });
+        playShadowSound();
+      }
+      shadowControls.start({
+        x: `${shadowPosition.x}%`,
+        y: `${shadowPosition.y}%`,
+        transition: { duration: 1 },
+      });
+    };
+    dodgeLight();
+  }, [divinePosition, shadowPosition, shadowControls, playShadowSound]);
+
+  return (
+    <div className="relative h-screen w-full overflow-hidden bg-black">
+      {/* Starry Night Background */}
+      <div className="absolute inset-0">
+        <motion.div
+          className="h-full w-full bg-gradient-to-b from-[#02050f] to-[#0c0f1f]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.5 }}
+        ></motion.div>
+      </div>
+
+      {/* Stars and Nebulae */}
+      <motion.div
+        className="absolute inset-0 bg-[url('/images/stars-nebula.png')] bg-cover opacity-70"
+        animate={{ backgroundPosition: ["0% 0%", "100% 100%"] }}
+        transition={{ duration: 60, repeat: Infinity, ease: "linear" }}
+      />
+
+      {/* Floating Elements */}
+      <motion.div
+        className="absolute left-[10%] top-[30%] text-neon-purple"
+        animate={{ y: [0, -15, 0] }}
+        transition={{ repeat: Infinity, duration: 5, ease: "easeInOut" }}
+      >
+        <div className="h-20 w-20 rounded-full bg-purple-700 blur-xl opacity-60"></div>
+      </motion.div>
+
+      <motion.div
+        className="absolute right-[20%] top-[50%] text-neon-blue"
+        animate={{ y: [0, 15, 0] }}
+        transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
+      >
+        <div className="h-16 w-16 rounded-full bg-blue-600 blur-md opacity-50"></div>
+      </motion.div>
+
+      {/* Central Portal */}
+      <motion.div
+        className="absolute left-1/2 top-1/3 -translate-x-1/2 flex items-center justify-center cursor-pointer"
+        initial={{ scale: 0.8, opacity: 0.7 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 3, repeat: Infinity, repeatType: "mirror" }}
+        onClick={handlePortalClick}
+      >
+        <div className={`h-48 w-48 rounded-full border-4 border-${portalColor} animate-pulse`}></div>
+      </motion.div>
+
+      {/* Divine Being of Light */}
+      <motion.div
+        className="absolute h-16 w-16 bg-yellow-400 rounded-full shadow-lg"
+        animate={divineControls}
+        initial={{ x: "50%", y: "40%" }}
+        transition={{ duration: 3 }}
+      />
+
+      {/* Light Rays Effect */}
+      <motion.div
+        className="absolute h-1 w-full bg-gradient-to-r from-yellow-400 to-transparent"
+        style={{ top: `${divinePosition.y}%`, left: `${divinePosition.x}%` }}
+        animate={{ opacity: [0.5, 0, 0.5] }}
+        transition={{ duration: 1, repeat: Infinity }}
+      />
+
+      {/* Shadow Being as Mystical Creature */}
+      <motion.div
+        className="absolute flex flex-col items-center justify-center h-20 w-20 bg-gray-800 text-gray-300 rounded-full blur-md shadow-md"
+        animate={shadowControls}
+        initial={{ x: "15%", y: "70%" }}
+      >
+        <div className="h-10 w-10 bg-gray-700 rounded-full shadow-inner"></div>
+        <div className="mt-1 w-4 h-4 bg-gray-600 rounded-full transform rotate-45"></div>
+        <p className="text-xs text-gray-400 mt-1">Shadow Beast</p>
+      </motion.div>
+
+      {/* Footer or Ground Elements */}
+      <div className="absolute bottom-0 h-32 w-full bg-gradient-to-t from-black to-transparent"></div>
+
+      {/* HUD Mockup */}
+      <Card className="absolute top-5 left-5">
+        <CardContent className="text-white">Score: 1234</CardContent>
+      </Card>
+
+      <Card className="absolute top-5 right-5">
+        <CardContent className="text-white">Level 1</CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default GameBackground;
